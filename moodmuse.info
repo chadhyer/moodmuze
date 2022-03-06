@@ -1,9 +1,0 @@
-#### Moodmuse Info File ####
-SELF_NAME=moodmuse
-SELF_MAJOR=00
-SELF_MINOR=00
-SELF_INFO=/etc/moodmuse/moodmuse.info
-SELF_CONF=/etc/moodmuse/moodmuse.conf
-SELF_BIN=/bin/moodmuse/
-SELF_VAR=/var/db/
-SELF_LOG=/var/log/moodmuse/moodmuse.log

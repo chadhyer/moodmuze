@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # SELF_NAME
-SELF_INFO=./moodmuse.info
+SELF_INFO=$(ls|grep -m 1 .*.info)
 SELF_NAME=$(sed -e '/SELF_NAME=/!d' -e 's/SELF_NAME=//g' $SELF_INFO)
 
 # If SELF_NAME is empty then error exit
