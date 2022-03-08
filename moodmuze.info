@@ -4,7 +4,3 @@ SELF_MAJOR=00
 SELF_MINOR=00
 SELF_INFO=/etc/moodmuze/moodmuze.info
 SELF_CONF=/etc/moodmuze/moodmuze.conf
-SELF_BIN=/bin/moodmuze/
-SELF_VAR=/var/db/moodmuze/
-SELF_LOG=/var/log/moodmuze/moodmuze.log
-SELF_AUTH=/etc/moodmuze/auth
