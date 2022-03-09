@@ -1,0 +1,10 @@
+[Log]
+# Log File
+LOG_FILE=/var/log/moodmuze/moodmuze.log
+# Logging Level
+LOG_LEVEL=2
+[Hue]
+# BRIDGE_IP=[ip]
+BRIDGE_IP=
+# AUTH_FILE=/path/to/file
+AUTH_FILE=/etc/moodmuze/auth
