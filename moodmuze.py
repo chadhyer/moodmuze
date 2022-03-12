@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-#### Imported Packages ####
+#### Imported Packages
 from os.path import exists #check if file exists
 import os #run os commands
 import configparser #config file
@@ -24,11 +24,11 @@ SELF_CONF = os.popen(cmd).read().strip()
 ## Integers
 ## Booleans
 
-#### Help_Text ####
+# Help text
 def Help_Text():
   print( SELF_NAME + ' V' + SELF_MAJOR + '.' + SELF_MINOR + ' Help Text placeholder')
 
-#### Load_Conf ####
+# Load configuration file options into global variables
 def Load_Conf():
   global LOG_FILE
   global LOG_LEVEL
@@ -46,7 +46,7 @@ def Load_Conf():
   BRIDGE_IP = config.get('Hue', 'BRIDGE_IP')
   AUTH_FILE = config.get('Hue', 'AUTH_FILE')
 
-#### Log_Message ####
+# Logs app state into log - I've learned recently that this way might be bad practice?
 def Log_Message(level, message):
   dt = datetime.datetime.now()
   if level == 5:
@@ -68,24 +68,7 @@ def Log_Message(level, message):
     print(dt.strftime("%Y-%m-%d %H:%M:%S") + '    [' + label + ']    ' + str(message))
   log.close()
 
-#### json_extract ####
-# Recursively fetch values from nested JSON
-def json_extract(obj, key):
-  arr = []
-  # Recursively search for values of key in JSON tree
-  def extract(obj, arr, key):
-    if isinstance(obj, dict):
-      for k, v in obj.items():
-        if isinstance(v, (dict, list)):
-          extract(v, arr, key)
-        elif k == key:
-          arr.append(v)
-    elif isinstance(obj, list):
-      for item in obj:
-        extract(item, arr, key)
-    return arr
-
-#### Parameters ####
+# Parameters used when executing script
 def Parameters(argv):
   try:
     opts, args = getopt.getopt(argv, "hd",["help","debug"])
@@ -101,7 +84,7 @@ def Parameters(argv):
       LOG_LEVEL = 1
       Log_Message (1, "Debug Logging enabled.")
 
-#### Auth ####
+# Create AUTH_TOKEN variable used to communicate with API
 def Auth():
   # Check that auth file exists
   auth_exists = exists(AUTH_FILE)
@@ -117,23 +100,25 @@ def Auth():
   auth = os.popen(cmd).read().strip()
   AUTH_TOKEN = BRIDGE_IP + '/api/' + auth
 
-# Validate response of API interaction
+# Validate API interaction was successful
 def check_response(data):
   if bool(re.match('\[{"error":{', data)):
     json_error = json.loads(data)
     # Example error [{'error': {'type': 1, 'address': '/', 'description': 'unauthorized user'}}]
-    #er_type = json_extract(json_error, 'type')
-    #er_address = json_extract(json_error, 'address')
-    #er_description = json_extract(json_error, 'description')
-    #print(str(er_description + ' at ' + er_address + ' type: ' + er_type))
     Log_Message(4, str(json_error))
     sys.exit('Error Occurred')
+    # Should add error handling - once I know what kind of errors can appear
+  else:
+    return True
 
-#### #### Class Light #### ####
+#### #### Class Light
 class Light:
+  # When creating class object save all info into variables
   def __init__(self, lid, data):
     self.id = lid
     self.info = json.loads(json.dumps(data))
+    print('--- state ---')
+    print(self.info["state"])
     # Extract info to variables
     self.load_state(self.info["state"]) #dict
     #try:
@@ -185,7 +170,7 @@ class Light:
     #except:
     #  self.productid = None
 
-  # Load State
+  # Load state dict into state variables
   def load_state(self, data):
     state = json.loads(json.dumps(data))
     self.on = state["on"]
@@ -214,6 +199,7 @@ class Light:
 
 #### #### Class Group #### ####
 class Group:
+  # When creating class object save all info into variables
   def __init__(self, lid, data):
     self.id = lid
     self.info = json.loads(json.dumps(data))
@@ -228,6 +214,7 @@ class Group:
     #self.locations = self.info["locations"]
     self.load_action(self.info["action"]) # dict
 
+  # Load action dict into action variables
   def load_action(self, data):
     action = json.loads(json.dumps(data))
     self.on = action["on"]
@@ -252,13 +239,15 @@ class Group:
     self.alert = action["alert"]
     self.colormode = action["colormode"]
 
+  # Load state dict into state variables
   def load_state(self, data):
     state = json.loads(json.dumps(data))
     self.all_on = state["all_on"]
     self.any_on = state["any_on"]
 
-#### #### Class Bridge #### ####
+#### #### Class Bridge
 class Bridge:
+  # When creating class object pull data from bridge and save it into variables
   def __init__(self):
     # Pull bridge config
     cmd = "curl " + AUTH_TOKEN + "/config"
@@ -297,50 +286,76 @@ class Bridge:
     self.whitelist = self.config["whitelist"] #dict
     self.lights = []
     self.groups = []
+    self.pull_lights()
+    self.pull_groups()
 
-  # Pull Light List
+  ### INFO PULLING FUNCTIONS
+  # Pull info for all lights, save to a list, and crate light class object for each light
   def pull_lights(self):
-    cmd = "curl " + AUTH_TOKEN + "/lights"
+    cmd = 'curl ' + AUTH_TOKEN + '/lights'
     data = os.popen(cmd).read().strip()
     check_response(data)
     lights = json.loads(data)
     for light in lights:
-      #print(light)
-      #print(lights[light])
-      self.lights.append( Light(light, lights[light]) )
+      print('--- lights[light] ---')
+      print(lights[light])
+      self.lights.append( Light( light, lights[light]) )
     #for obj in self.lights:
-    #  print( obj.name, obj.id, obj.on, obj.bri, obj.hue, obj.sat )
+    #  print( obj.name, obj.id, obj.type )
 
-  # Pull Light List
+  # Pull info for all groups, save to a list, and create group class object for each group
   def pull_groups(self):
-    cmd = "curl " + AUTH_TOKEN + "/groups"
+    cmd = 'curl ' + AUTH_TOKEN + '/groups'
     data = os.popen(cmd).read().strip()
     check_response(data)
     groups = json.loads(data)
     for group in groups:
       #print(group)
       #print(groups[group])
-      self.groups.append( Group(group, groups[group]) )
+      self.groups.append( Group( group, groups[group]) )
     #for obj in self.groups:
-    #  print( obj.name, obj.id, obj.all_on, obj.any_on )
+    #  print( obj.name, obj.id, obj.type )
 
-  # Toggle Light/Group on/Off
-  def toggle_on(self, lid, gid):
-    if lid is not None and gid is None:
-      cmd = "curl " + AUTH_TOKEN + "/lights/" + lid + '/state'
-      if lig.on == false:
-        cmd = "curl -X PUT " + AUTH_TOKEN + "/lights/" + lid + '/state -d \'{"on":true}\''
-      elif lig.on == true:
-        cmd = "curl -X PUT " + AUTH_TOKEN + "/lights/" + lid + '/state -d \'{"on":false}\''
-    elif lid is None and gid is not None:
-      cmd = "curl " + AUTH_TOKEN + "/groups/" + gid + '/state'
+  # Update Light/Group class object's info
+  def update_info(self, obj):
+    # Check if object is light or group
+    if re.search(".*light", obj.type):
+      # Pull and update class state variables
+      cmd = 'curl ' + AUTH_TOKEN + '/lights/' + obj.id
+      data = os.popen(cmd).read().strip()
+      check_response(data)
+      info = json.loads(data)
+      obj.load_state(info["state"])
     else:
-      Log_Message(3, 'Illegal usage of toggle_on')
+      # Pull and update class state/action variables
+      cmd = 'curl ' + AUTH_TOKEN + '/groups/' + obj.id
+      data = os.popen(cmd).read().strip()
+      check_response(data)
+      info = json.loads(data)
+      obj.load_action(info["action"])
+      obj.load_state(info["state"])
+
+  # Toggle Light/Group on/off then update class object's info
+  def toggle_on(self, obj):
+    if obj.on == True:
+      body = '\'{"on":false}\''
+    elif obj.on == False:
+      body = '\'{"on":true}\''
+    if re.search(".*light", obj.type):
+      cmd = 'curl -X PUT ' + AUTH_TOKEN + '/lights/' + str(obj.id) + '/state -d ' + body
+    else:
+      cmd = 'curl -X PUT ' + AUTH_TOKEN + '/groups/' + str(obj.id) + '/action -d ' + body
+    response = os.popen(cmd).read().strip()
+    check_response(response)
+    self.update_info(obj)
 
 #### ==== Main Sequence ==== ####
 Load_Conf()
 Parameters(sys.argv[1:])
 Auth()
 myBridge = Bridge()
-#myBridge.pull_lights()
-#myBridge.pull_groups()
+#myBridge.turn_light_off(myBridge.lights[0])
+#print(myBridge.lights[0].id)
+#print(myBridge.groups[0])
+#myBridge.toggle_on(myBridge.lights[0])
+myBridge.toggle_on(myBridge.groups[0])
