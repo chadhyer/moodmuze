@@ -77,12 +77,18 @@ def Parameters(argv):
     print('Invalid argument used')
     sys.exit(2)
   for opt, arg in opts:
-    if opt in ('-h', '--help'):
+    if opt in ('-h', '--help'): # Print help text and exit
       Help_Text()
       sys.exit(0)
-    elif opt in ('-d', '--debug'):
+    elif opt in ('-d', '--debug'): # Enter debug mode
       LOG_LEVEL = 1
       Log_Message (1, "Debug Logging enabled.")
+    #elif opt in ('-B', '--bridge'): # Return bridge information
+    #elif opt in ('-L', '--lid-info'): # Return Light(s) information
+    #elif opt in ('-l', '--lid'): # Light(s) to modify
+    #elif opt in ('-G', '--gid-info'): # Return Group(s) information
+    #elif opt in ('-g', '--gid'): # Group(s) to modify
+
 
 # Create AUTH_TOKEN variable used to communicate with API
 def Auth():
@@ -117,8 +123,8 @@ class Light:
   def __init__(self, lid, data):
     self.id = lid
     self.info = json.loads(json.dumps(data))
-    print('--- state ---')
-    print(self.info["state"])
+    #print('--- state ---')
+    #print(self.info["state"])
     # Extract info to variables
     self.load_state(self.info["state"]) #dict
     #try:
@@ -297,8 +303,8 @@ class Bridge:
     check_response(data)
     lights = json.loads(data)
     for light in lights:
-      print('--- lights[light] ---')
-      print(lights[light])
+      #print('--- lights[light] ---')
+      #print(lights[light])
       self.lights.append( Light( light, lights[light]) )
     #for obj in self.lights:
     #  print( obj.name, obj.id, obj.type )
@@ -335,6 +341,7 @@ class Bridge:
       obj.load_action(info["action"])
       obj.load_state(info["state"])
 
+  ### STATE UPDATING FUNCTIONS
   # Toggle Light/Group on/off then update class object's info
   def toggle_on(self, obj):
     if obj.on == True:
@@ -349,13 +356,60 @@ class Bridge:
     check_response(response)
     self.update_info(obj)
 
+  # Change Brightness (bri) for Light/Group
+  # 0 to 255
+  def update_bri(self, obj, value):
+    body = '\'{"bri":' + str(value) + '}\''
+    if re.search(".*light", obj.type):
+      cmd = 'curl -X PUT ' + AUTH_TOKEN + '/lights/' + str(obj.id) + '/state -d ' + body
+    else:
+      cmd = 'curl -X PUT ' + AUTH_TOKEN + '/groups/' + str(obj.id) + '/action -d ' + body
+    response = os.popen(cmd).read().strip()
+    check_response(response)
+    self.update_info(obj)
+
+  # Change Hue for Light/Group
+  # 0 to 65535
+  def update_hue(self, obj, value):
+    body = '\'{"hue":' + str(value) + '}\''
+    if re.search(".*light", obj.type):
+      cmd = 'curl -X PUT ' + AUTH_TOKEN + '/lights/' + str(obj.id) + '/state -d ' + body
+    else:
+      cmd = 'curl -X PUT ' + AUTH_TOKEN + '/groups/' + str(obj.id) + '/action -d ' + body
+    response = os.popen(cmd).read().strip()
+    check_response(response)
+    self.update_info(obj)
+
+  # Change Saturation (sat) for Light/Group
+  # 0 to 255
+  def update_sat(self, obj, value):
+    body = '\'{"sat":' + str(value) + '}\''
+    if re.search(".*light", obj.type):
+      cmd = 'curl -X PUT ' + AUTH_TOKEN + '/lights/' + str(obj.id) + '/state -d ' + body
+    else:
+      cmd = 'curl -X PUT ' + AUTH_TOKEN + '/groups/' + str(obj.id) + '/action -d ' + body
+    response = os.popen(cmd).read().strip()
+    check_response(response)
+    self.update_info(obj)
+
+  # Change effect for Light/Group
+  def update_effect(self, obj, value):
+    pass
+  # Change xy for Light/Group
+  def update_xy(self, obj, value):
+    pass
+  # Change ct for Light/Group
+  def update_ct(self, obj, value):
+    pass
+  # Change alert for Light/Group
+  def update_alert(self, obj, value):
+    pass
+  # Change colormode for Light/Group
+  def update_colormode(self, obj, value):
+    pass
+
 #### ==== Main Sequence ==== ####
 Load_Conf()
-Parameters(sys.argv[1:])
 Auth()
 myBridge = Bridge()
-#myBridge.turn_light_off(myBridge.lights[0])
-#print(myBridge.lights[0].id)
-#print(myBridge.groups[0])
-#myBridge.toggle_on(myBridge.lights[0])
-myBridge.toggle_on(myBridge.groups[0])
+Parameters(sys.argv[1:])
