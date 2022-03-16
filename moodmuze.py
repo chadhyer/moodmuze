@@ -26,7 +26,7 @@ SELF_CONF = os.popen(cmd).read().strip()
 
 # Help text
 def Help_Text():
-  print( SELF_NAME + ' V' + SELF_MAJOR + '.' + SELF_MINOR + ' Help Text placeholder')
+  print( SELF_NAME + ' V' + SELF_MAJOR + '.' + SELF_MINOR + '\n        Paramaters\n        ----------\n        -h --help         Print this help text\n        -d --debug        Print debug lines\n        -B --bridge       Print Bridge info\n        -L --lid-info     Print Light ID info\n        -l --lid          Use Light ID\n        -G --gid-info     Print Group ID info\n        -g --gid          Use Group ID\n        -s --state        State change to apply on Light/Group ID')
 
 # Load configuration file options into global variables
 def Load_Conf():
@@ -71,7 +71,8 @@ def Log_Message(level, message):
 # Parameters used when executing script
 def Parameters(argv):
   try:
-    opts, args = getopt.getopt(argv, "hd",["help","debug"])
+    opts, args = getopt.getopt(argv,
+                               "hdBLlGgs",["help","debug","bridge","lid-info","--lid","--gid-info","-git","--state"])
   except getopt.GetoptError:
     Help_Text()
     print('Invalid argument used')
@@ -83,12 +84,18 @@ def Parameters(argv):
     elif opt in ('-d', '--debug'): # Enter debug mode
       LOG_LEVEL = 1
       Log_Message (1, "Debug Logging enabled.")
-    #elif opt in ('-B', '--bridge'): # Return bridge information
-    #elif opt in ('-L', '--lid-info'): # Return Light(s) information
-    #elif opt in ('-l', '--lid'): # Light(s) to modify
-    #elif opt in ('-G', '--gid-info'): # Return Group(s) information
-    #elif opt in ('-g', '--gid'): # Group(s) to modify
-
+    elif opt in ('-B', '--bridge'): # Return bridge information
+      print('bridge')
+    elif opt in ('-L', '--lid-info'): # Return Light(s) information
+      print('lid-info')
+    elif opt in ('-l', '--lid'): # Light(s) to modify
+      print('lid')
+    elif opt in ('-G', '--gid-info'): # Return Group(s) information
+      print('gid-info')
+    elif opt in ('-g', '--gid'): # Group(s) to modify
+      print('gid')
+    elif opt in ('-s', '--state'): # Change state of Light/Group
+      print('state')
 
 # Create AUTH_TOKEN variable used to communicate with API
 def Auth():
@@ -409,7 +416,7 @@ class Bridge:
     pass
 
 #### ==== Main Sequence ==== ####
+Parameters(sys.argv[1:])
 Load_Conf()
 Auth()
 myBridge = Bridge()
-Parameters(sys.argv[1:])
