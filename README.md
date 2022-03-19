@@ -13,7 +13,7 @@
 '     \__\/         \__\/         \__\/                        \/__/         \/__/         \/__/         \/__/     '
 '                                                                                                                  '
 '##################################################################################################################'
-```
+
 Moodmuze
 
 Parameters
@@ -29,3 +29,5 @@ Parameters
 
 moodmuse
 Control your Philips Hue Bridge with API calls from this Python application
+
+```
