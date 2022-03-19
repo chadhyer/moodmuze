@@ -26,7 +26,9 @@ SELF_CONF = os.popen(cmd).read().strip()
 
 # Help text
 def Help_Text():
-  print( SELF_NAME + ' V' + SELF_MAJOR + '.' + SELF_MINOR + '\n        Paramaters\n        ----------\n        -h --help         Print this help text\n        -d --debug        Print debug lines\n        -B --bridge       Print Bridge info\n        -L --lid-info     Print Light ID info\n        -l --lid          Use Light ID\n        -G --gid-info     Print Group ID info\n        -g --gid          Use Group ID\n        -s --state        State change to apply on Light/Group ID')
+  print( SELF_NAME + ' V' + SELF_MAJOR + '.' + SELF_MINOR)
+  README = open('./README.md', 'r')
+  print(README.read())
 
 # Load configuration file options into global variables
 def Load_Conf():
@@ -96,6 +98,9 @@ def Parameters(argv):
       print('gid')
     elif opt in ('-s', '--state'): # Change state of Light/Group
       print('state')
+
+# Track tasks loaded into parameters
+
 
 # Create AUTH_TOKEN variable used to communicate with API
 def Auth():
@@ -415,7 +420,7 @@ class Bridge:
   def update_colormode(self, obj, value):
     pass
 
-#### ==== Main Sequence ==== ####
+# Main Sequence
 Parameters(sys.argv[1:])
 Load_Conf()
 Auth()
