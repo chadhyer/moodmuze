@@ -9,6 +9,7 @@ import sys #exit
 import getopt #parameters
 import json #handle json data
 import re #regular expression
+from pprint import pprint #allows printing object variables
 
 #### Global Variables
 ## Constants
@@ -23,6 +24,13 @@ cmd = "sed -e '/SELF_CONF=/!d' -e 's/SELF_CONF=//g' " + SELF_INFO
 SELF_CONF = os.popen(cmd).read().strip()
 ## Integers
 ## Booleans
+print_info = False
+print_lights = False
+print_groups = False
+task_lid = ''
+task_gid = ''
+task_state = ''
+task_value = ''
 
 # Help text
 def Help_Text():
@@ -72,14 +80,22 @@ def Log_Message(level, message):
 
 # Parameters used when executing script
 def Parameters(argv):
+  global print_info
+  global print_lights
+  global print_groups
+  global task_lid
+  global task_gid
+  global task_state
+  global task_value
   try:
-    opts, args = getopt.getopt(argv,
-                               "hdBLlGgs",["help","debug","bridge","lid-info","--lid","--gid-info","-git","--state"])
+    opts, args = getopt.getopt(argv,"hdBLl:Gg:s:v:",["help","debug","bridge","lid-info","lid=","gid-info","git=","state=","value="])
   except getopt.GetoptError:
     Help_Text()
     print('Invalid argument used')
     sys.exit(2)
   for opt, arg in opts:
+    print('opt:' + opt)
+    print('arg:' + arg)
     if opt in ('-h', '--help'): # Print help text and exit
       Help_Text()
       sys.exit(0)
@@ -87,20 +103,19 @@ def Parameters(argv):
       LOG_LEVEL = 1
       Log_Message (1, "Debug Logging enabled.")
     elif opt in ('-B', '--bridge'): # Return bridge information
-      print('bridge')
+      print_info = True
     elif opt in ('-L', '--lid-info'): # Return Light(s) information
-      print('lid-info')
+      print_lights = True
     elif opt in ('-l', '--lid'): # Light(s) to modify
-      print('lid')
+      task_lid = arg
     elif opt in ('-G', '--gid-info'): # Return Group(s) information
-      print('gid-info')
+      print_groups = True
     elif opt in ('-g', '--gid'): # Group(s) to modify
-      print('gid')
+      task_gid = arg
     elif opt in ('-s', '--state'): # Change state of Light/Group
-      print('state')
-
-# Track tasks loaded into parameters
-
+      task_state = str(arg)
+    elif opt in ('-v', '--value'): # Value applied to state change
+      task_value = arg
 
 # Create AUTH_TOKEN variable used to communicate with API
 def Auth():
@@ -215,7 +230,7 @@ class Light:
     self.mode = state["mode"]
     self.reachable = state["reachable"]
 
-#### #### Class Group #### ####
+#### #### Class Group
 class Group:
   # When creating class object save all info into variables
   def __init__(self, lid, data):
@@ -306,6 +321,20 @@ class Bridge:
     self.groups = []
     self.pull_lights()
     self.pull_groups()
+
+    # Print self if -B --bridge flag used
+    if print_info == True:
+      pprint(vars(self))
+
+    # Print Lights
+    if print_lights == True:
+      for light in self.lights:
+        pprint(vars(light))
+
+    # Print Groups
+    if print_groups == True:
+      for group in self.groups:
+        pprint(vars(group))
 
   ### INFO PULLING FUNCTIONS
   # Pull info for all lights, save to a list, and crate light class object for each light
@@ -420,8 +449,36 @@ class Bridge:
   def update_colormode(self, obj, value):
     pass
 
+  # task
+  def task(self):
+    if task_lid != '':
+      for idx, light in enumerate(self.lights):
+        if task_lid == light.id:
+          target = idx
+          target_type = self.lights
+    elif task_gid != '':
+      for idx, group in enumerate(self.groups):
+        if task_gid == group.id:
+          target = idx
+          target_type = self.groups
+    if task_state == 'on':
+      self.toggle_on(target_type[target])
+      print('toggle on ' + str(target))
+    elif task_state == 'bri':
+      self.update_bri(target_type[target], task_value)
+      print('update bri ' + str(target))
+    elif task_state == 'hue':
+      self.update_hue(target_type[target], task_value)
+      print('update hue ' + str(target))
+    elif task_state == 'sat':
+      self.update_sat(target_type[target], task_value)
+      print('update sat ' + str(target))
+    print(target)
+
 # Main Sequence
 Parameters(sys.argv[1:])
 Load_Conf()
 Auth()
 myBridge = Bridge()
+#myBridge.toggle_on(myBridge.lights[0])
+myBridge.task()
