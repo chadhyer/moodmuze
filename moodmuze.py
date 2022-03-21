@@ -10,7 +10,6 @@ import getopt #parameters
 import json #handle json data
 import re #regular expression
 import requests #api interactions
-import hashlib
 from pprint import pprint #allows printing object variables
 
 #### Global Variables
@@ -54,8 +53,8 @@ def load_conf():
   conf_exists = exists(SELF_CONF)
   if conf_exists != True:
     dt = datetime.datetime.now()
-    sys.exit(dt.strftime("%Y-%m-%d %H:%M:%S") + '    [ERROR]    Unable to find'
-            'config file: ' + SELF_CONF + '! Exiting!!!')
+    sys.exit(dt.strftime("%Y-%m-%d %H:%M:%S") + '    [ERROR]    Unable to \
+             find config file: ' + SELF_CONF + '! Exiting!!!')
   config = configparser.ConfigParser()
   config.read(SELF_CONF)
   # Load Configuration Options
@@ -65,7 +64,7 @@ def load_conf():
   AUTH_FILE = config.get('Hue', 'AUTH_FILE')
 
 # Logs app state into log 
-def Log_Message(level, message):
+def log_message(level, message):
   dt = datetime.datetime.now()
   if level == 5 or level == 2:
     label = 'INFO'
@@ -77,14 +76,14 @@ def Log_Message(level, message):
     label = 'DEBUG'
   log = open(LOG_FILE, 'a')
   if LOG_LEVEL == 1:
-    print(dt.strftime("%Y-%m-%d %H:%M:%S") + '    [' + label + ']    '
+    print(dt.strftime("%Y-%m-%d %H:%M:%S") + '    [' + label + ']    ' \
           + str(msg), file = log)
-    print(dt.strftime("%Y-%m-%d %H:%M:%S") + '    [' + label + ']    '
+    print(dt.strftime("%Y-%m-%d %H:%M:%S") + '    [' + label + ']    ' \
           + str(message))
   elif level >= LOG_LEVEL:
-    print(dt.strftime("%Y-%m-%d %H:%M:%S") + '    [' + label + ']    '
+    print(dt.strftime("%Y-%m-%d %H:%M:%S") + '    [' + label + ']    ' \
           + str(message), file = log)
-    print(dt.strftime("%Y-%m-%d %H:%M:%S") + '    [' + label + ']    '
+    print(dt.strftime("%Y-%m-%d %H:%M:%S") + '    [' + label + ']    ' \
           + str(message))
   log.close()
 
@@ -110,7 +109,7 @@ def parameters(argv):
       sys.exit(0)
     elif opt in ('-d', '--debug'): # Enter debug mode
       LOG_LEVEL = 1
-      Log_Message (1, "Debug logging enabled via parameter")
+      log_message (1, "Debug logging enabled via parameter")
     elif opt in ('-B', '--bridge'): # Return bridge information
       print_info = True
     elif opt in ('-L', '--lid-info'): # Return Light(s) information
@@ -134,7 +133,7 @@ def auth():
     with open(AUTH_FILE, 'r') as file:
       USERNAME = file.read().rstrip()
   else:
-    Log_Message(4, 'Athentication file is missing!')
+    log_message(4, 'Athentication file is missing!')
     sys.exit('Auth Missing')
   # Load Auth Token
   AUTH_TOKEN = 'http://' + BRIDGE_IP + '/api/' + USERNAME
@@ -143,8 +142,9 @@ def auth():
 def check_response(data):
   if bool(re.match('\[{"error":{', data)):
     json_error = json.loads(data)
-    # Example error [{'error': {'type': 1, 'address': '/', 'description': 'unauthorized user'}}]
-    Log_Message(4, str(json_error))
+    # Example error [{'error': {'type': 1, 'address': '/', 'description': ' \
+    #               unauthorized user'}}]
+    log_message(4, str(json_error))
     sys.exit('Error Occurred')
     # Should add error handling - once I know what kind of errors can appear
   else:
@@ -382,6 +382,18 @@ class Bridge:
     if type_ == '/groups/':
       obj.load_action(info["action"])
 
+  # update_object's state/action
+  def update_object(self, obj, body):
+    if re.search(".*light", obj.type):
+      url = AUTH_TOKEN + '/lights/' + obj.id + '/state'
+    else:
+      url = AUTH_TOKEN + '/groups/' + obj.id + '/action'
+    response = requests.put(url, body)
+    data = str(response.content, ENCODING)
+    check_response(data)
+    self.update_info(obj)
+
+
   ### STATE UPDATING FUNCTIONS
   # Toggle Light/Group on/off then update class object's info
   def toggle_on(self, obj):
@@ -389,14 +401,7 @@ class Bridge:
       body = '{"on":false}'
     elif obj.on is False:
       body = '{"on":true}'
-    if re.search(".*light", obj.type):
-      url = AUTH_TOKEN + '/lights/' + obj.id + '/state'
-    else:
-      url = AUTH_TOKEN + '/groups/' + obj.id + '/action'
-    response = requests.put(url, body)
-    data = str(response.content, ENCODING)
-    check_response(data)
-    self.update_info(obj)
+    self.update_object(obj, body)
 
   # Change Brightness (bri) for Light/Group
   # 0 to 255
@@ -404,14 +409,7 @@ class Bridge:
     if value > 255:
       value = 255
     body = '{"bri":' + str(value) + '}'
-    if re.search(".*light", obj.type):
-      url = AUTH_TOKEN + '/lights/' + obj.id + '/state'
-    else:
-      url = AUTH_TOKEN + '/groups/' + obj.id + '/action'
-    response = requests.put(url, body)
-    data = str(response.content, ENCODING)
-    check_response(data)
-    self.update_info(obj)
+    self.update_object(obj, body)
 
   # Change Hue for Light/Group
   # 0 to 65535
@@ -419,14 +417,7 @@ class Bridge:
     if value > 65535:
       value = 65535
     body = '{"hue":' + str(value) + '}'
-    if re.search(".*light", obj.type):
-      url = AUTH_TOKEN + '/lights/' + obj.id + '/state'
-    else:
-      url = AUTH_TOKEN + '/groups/' + obj.id + '/action'
-    response = requests.put(url, body)
-    data = str(response.content, ENCODING)
-    check_response(data)
-    self.update_info(obj)
+    self.update_object(obj, body)
 
   # Change Saturation (sat) for Light/Group
   # 0 to 255
@@ -434,29 +425,33 @@ class Bridge:
     if value > 255:
       value = 255
     body = '{"sat":' + str(value) + '}'
-    if re.search(".*light", obj.type):
-      url = AUTH_TOKEN + '/lights/' + obj.id + '/state'
-    else:
-      url = AUTH_TOKEN + '/groups/' + obj.id + '/action'
-    response = requests.put(url, body)
-    check_response(data)
-    self.update_info(obj)
+    self.update_object(obj, body)
 
   # Change effect for Light/Group
   def update_effect(self, obj, value):
-    pass
+    body = '{"effect":"' + value + '"}'
+    self.update_object(obj, body)
+
   # Change xy for Light/Group
   def update_xy(self, obj, value):
-    pass
+    x = value[0]
+    y = value[1]
+    body = '{"xy": [' + x + ', ' +  y + ']}'
+    self.update_object(obj, body)
+
   # Change ct for Light/Group
   def update_ct(self, obj, value):
-    pass
+    body = '{"ct": ' + value + '}'
+    self.update_object(obj, body)
+
   # Change alert for Light/Group
-  def update_alert(self, obj, value):
-    pass
+  #def update_alert(self, obj, value):
+  #  pass
+
   # Change colormode for Light/Group
   def update_colormode(self, obj, value):
-    pass
+    body = '{"colormode": "' + value + '"}'
+    self.update_object(obj, body)
 
   # task
   def task(self):
@@ -474,40 +469,40 @@ class Bridge:
           target_idx = idx
           target_type = self.groups[target_idx].type
           target_name = self.groups[target_idx].name
-    target_type = target[target_idx].type 
-    target_name = target[target_idx].name
     if task_state == 'on':
-      Log_Message(2, 'Toggling on state for ' + str(target_name))
+      log_message(2, 'Toggling on state for ' + str(target_name))
       self.toggle_on(target[target_idx])
     elif task_state == 'bri':
-      Log_Message(2, 'Updating brightness for ' + str(target_name))
+      log_message(2, 'Updating brightness for ' + str(target_name))
       self.update_bri(target[target_idx], task_value)
     elif task_state == 'hue':
-      Log_Message(2, 'Updating hue for ' + str(target_name))
+      log_message(2, 'Updating hue for ' + str(target_name))
       self.update_hue(target[target_idx], task_value)
     elif task_state == 'sat':
-      Log_Message(2, 'Updating saturation for ' + str(target_type))
+      log_message(2, 'Updating saturation for ' + str(target_type))
       self.update_sat(target[target_idx], task_value)
     elif task_state == 'effect':
-      Log_Message(2, 'Updating effect for ' + str(target_name))
+      log_message(2, 'Updating effect for ' + str(target_name))
       self.update_effect(target[target_idx], task_value)
     elif task_state == 'xy':
-      Log_Message(2, 'Updating xy for ' + str(target_name))
+      log_message(2, 'Updating xy for ' + str(target_name))
       self.update_xy(target[target_idx], task_value)
     elif task_state == 'ct':
-      Log_Message(2, 'Updating ct for ' + str(target_name))
+      log_message(2, 'Updating ct for ' + str(target_name))
       self.update_ct(target[target_idx], task_value)
-    elif task_state == 'alert':
-      Log_Message(2, 'Updating alert for ' + str(target_name))
-      self.update_alert(target[target_idx], task_value)
+    #elif task_state == 'alert':
+    #  log_message(2, 'Updating alert for ' + str(target_name))
+    #  self.update_alert(target[target_idx], task_value)
     elif task_state == 'colormode':
-      Log_Message(2, 'Updating colormode for ' + str(target_name))
+      log_message(2, 'Updating colormode for ' + str(target_name))
       self.update_colormode(target[target_idx], task_value)
 
 # Main Sequence
 load_conf()
-Log_Message(5, 'Initiating ' + SELF_NAME + ' v' + SELF_MAJOR + SELF_MINOR + SELF_PATCH )
+log_message(5, 'Initiating ' + SELF_NAME + ' v' + SELF_MAJOR + SELF_MINOR + \
+            SELF_PATCH )
 parameters(sys.argv[1:])
 auth()
 MyBridge = Bridge()
-MyBridge.task()
+if task_state != '':
+  MyBridge.task()
