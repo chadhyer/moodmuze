@@ -1,6 +1,7 @@
 #### moodmuze Info File ####
 SELF_NAME=moodmuze
-SELF_MAJOR=00
-SELF_MINOR=00
+SELF_MAJOR=1
+SELF_MINOR=1
+SELF_PATCH=0
 SELF_INFO=/etc/moodmuze/moodmuze.info
 SELF_CONF=/etc/moodmuze/moodmuze.conf

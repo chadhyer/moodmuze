@@ -9,11 +9,14 @@ import sys #exit
 import getopt #parameters
 import json #handle json data
 import re #regular expression
+import requests #api interactions
+import hashlib
 from pprint import pprint #allows printing object variables
 
 #### Global Variables
 ## Constants
 SELF_INFO = '/etc/moodmuze/moodmuze.info'
+ENCODING = 'utf-8'
 with open(SELF_INFO, 'r') as INFO:
   for line in INFO:
     if re.search('^SELF_INFO=', line):
@@ -22,6 +25,8 @@ with open(SELF_INFO, 'r') as INFO:
       SELF_MAJOR = line[11:-1]
     elif re.search('^SELF_MINOR=', line):
       SELF_MINOR = line[11:-1]
+    elif re.search('^SELF_PATCH=', line):
+      SELF_PATCH = line[11:-1]
     elif re.search('^SELF_CONF=', line):
       SELF_CONF = line[10:-1]
   INFO.close()
@@ -59,7 +64,7 @@ def load_conf():
   BRIDGE_IP = config.get('Hue', 'BRIDGE_IP')
   AUTH_FILE = config.get('Hue', 'AUTH_FILE')
 
-# Logs app state into log - I've learned recently that this way might be bad practice?
+# Logs app state into log 
 def Log_Message(level, message):
   dt = datetime.datetime.now()
   if level == 5 or level == 2:
@@ -132,7 +137,7 @@ def auth():
     Log_Message(4, 'Athentication file is missing!')
     sys.exit('Auth Missing')
   # Load Auth Token
-  AUTH_TOKEN = BRIDGE_IP + '/api/' + USERNAME
+  AUTH_TOKEN = 'http://' + BRIDGE_IP + '/api/' + USERNAME
 
 # Validate API interaction was successful
 def check_response(data):
@@ -145,7 +150,7 @@ def check_response(data):
   else:
     return True
 
-#### #### Class Light
+#### Class Light
 class Light:
   # When creating class object save all info into variables
   def __init__(self, lid, data):
@@ -229,7 +234,7 @@ class Light:
     self.mode = state["mode"]
     self.reachable = state["reachable"]
 
-#### #### Class Group
+#### Class Group
 class Group:
   # When creating class object save all info into variables
   def __init__(self, lid, data):
@@ -277,14 +282,15 @@ class Group:
     self.all_on = state["all_on"]
     self.any_on = state["any_on"]
 
-#### #### Class Bridge
+#### Class Bridge
 class Bridge:
   # When creating class object pull data from bridge and save it 
   # into variables
   def __init__(self):
     # Pull bridge config
-    cmd = "curl " + AUTH_TOKEN + "/config"
-    data = os.popen(cmd).read().strip()
+    url = AUTH_TOKEN + '/config'
+    response = requests.get(url)
+    data = str(response.content, ENCODING)
     check_response(data)
     self.config = json.loads(data)
     # Extract config to variables
@@ -340,8 +346,9 @@ class Bridge:
   # Pull info for all lights, save to a list, and crate light class object 
   # for each light
   def pull_lights(self):
-    cmd = 'curl ' + AUTH_TOKEN + '/lights'
-    data = os.popen(cmd).read().strip()
+    url = AUTH_TOKEN + '/lights'
+    response = requests.get(url)
+    data = str(response.content, ENCODING)
     check_response(data)
     lights = json.loads(data)
     for light in lights:
@@ -350,8 +357,9 @@ class Bridge:
   # Pull info for all groups, save to a list, and create group class object 
   # for each group
   def pull_groups(self):
-    cmd = 'curl ' + AUTH_TOKEN + '/groups'
-    data = os.popen(cmd).read().strip()
+    url = AUTH_TOKEN + '/groups'
+    response = requests.get(url)
+    data = str(response.content, ENCODING)
     check_response(data)
     groups = json.loads(data)
     for group in groups:
@@ -365,8 +373,9 @@ class Bridge:
     else:
       type_ = '/groups/'
     # Pull and update class state variables
-    cmd = 'curl ' + AUTH_TOKEN + type_ + obj.id
-    data = os.popen(cmd).read().strip()
+    url = AUTH_TOKEN + type_ + obj.id
+    response = requests.get(url)
+    data = str(response.content, ENCODING)
     check_response(data)
     info = json.loads(data)
     obj.load_state(info["state"])
@@ -377,51 +386,60 @@ class Bridge:
   # Toggle Light/Group on/off then update class object's info
   def toggle_on(self, obj):
     if obj.on is True:
-      body = '\'{"on":false}\''
+      body = '{"on":false}'
     elif obj.on is False:
-      body = '\'{"on":true}\''
+      body = '{"on":true}'
     if re.search(".*light", obj.type):
-      cmd = 'curl -X PUT ' + AUTH_TOKEN + '/lights/' + str(obj.id) + '/state -d ' + body
+      url = AUTH_TOKEN + '/lights/' + obj.id + '/state'
     else:
-      cmd = 'curl -X PUT ' + AUTH_TOKEN + '/groups/' + str(obj.id) + '/action -d ' + body
-    response = os.popen(cmd).read().strip()
-    check_response(response)
+      url = AUTH_TOKEN + '/groups/' + obj.id + '/action'
+    response = requests.put(url, body)
+    data = str(response.content, ENCODING)
+    check_response(data)
     self.update_info(obj)
 
   # Change Brightness (bri) for Light/Group
   # 0 to 255
   def update_bri(self, obj, value):
-    body = '\'{"bri":' + str(value) + '}\''
+    if value > 255:
+      value = 255
+    body = '{"bri":' + str(value) + '}'
     if re.search(".*light", obj.type):
-      cmd = 'curl -X PUT ' + AUTH_TOKEN + '/lights/' + str(obj.id) + '/state -d ' + body
+      url = AUTH_TOKEN + '/lights/' + obj.id + '/state'
     else:
-      cmd = 'curl -X PUT ' + AUTH_TOKEN + '/groups/' + str(obj.id) + '/action -d ' + body
-    response = os.popen(cmd).read().strip()
-    check_response(response)
+      url = AUTH_TOKEN + '/groups/' + obj.id + '/action'
+    response = requests.put(url, body)
+    data = str(response.content, ENCODING)
+    check_response(data)
     self.update_info(obj)
 
   # Change Hue for Light/Group
   # 0 to 65535
   def update_hue(self, obj, value):
-    body = '\'{"hue":' + str(value) + '}\''
+    if value > 65535:
+      value = 65535
+    body = '{"hue":' + str(value) + '}'
     if re.search(".*light", obj.type):
-      cmd = 'curl -X PUT ' + AUTH_TOKEN + '/lights/' + str(obj.id) + '/state -d ' + body
+      url = AUTH_TOKEN + '/lights/' + obj.id + '/state'
     else:
-      cmd = 'curl -X PUT ' + AUTH_TOKEN + '/groups/' + str(obj.id) + '/action -d ' + body
-    response = os.popen(cmd).read().strip()
-    check_response(response)
+      url = AUTH_TOKEN + '/groups/' + obj.id + '/action'
+    response = requests.put(url, body)
+    data = str(response.content, ENCODING)
+    check_response(data)
     self.update_info(obj)
 
   # Change Saturation (sat) for Light/Group
   # 0 to 255
   def update_sat(self, obj, value):
-    body = '\'{"sat":' + str(value) + '}\''
+    if value > 255:
+      value = 255
+    body = '{"sat":' + str(value) + '}'
     if re.search(".*light", obj.type):
-      cmd = 'curl -X PUT ' + AUTH_TOKEN + '/lights/' + str(obj.id) + '/state -d ' + body
+      url = AUTH_TOKEN + '/lights/' + obj.id + '/state'
     else:
-      cmd = 'curl -X PUT ' + AUTH_TOKEN + '/groups/' + str(obj.id) + '/action -d ' + body
-    response = os.popen(cmd).read().strip()
-    check_response(response)
+      url = AUTH_TOKEN + '/groups/' + obj.id + '/action'
+    response = requests.put(url, body)
+    check_response(data)
     self.update_info(obj)
 
   # Change effect for Light/Group
@@ -470,9 +488,25 @@ class Bridge:
     elif task_state == 'sat':
       Log_Message(2, 'Updating saturation for ' + str(target_type))
       self.update_sat(target[target_idx], task_value)
+    elif task_state == 'effect':
+      Log_Message(2, 'Updating effect for ' + str(target_name))
+      self.update_effect(target[target_idx], task_value)
+    elif task_state == 'xy':
+      Log_Message(2, 'Updating xy for ' + str(target_name))
+      self.update_xy(target[target_idx], task_value)
+    elif task_state == 'ct':
+      Log_Message(2, 'Updating ct for ' + str(target_name))
+      self.update_ct(target[target_idx], task_value)
+    elif task_state == 'alert':
+      Log_Message(2, 'Updating alert for ' + str(target_name))
+      self.update_alert(target[target_idx], task_value)
+    elif task_state == 'colormode':
+      Log_Message(2, 'Updating colormode for ' + str(target_name))
+      self.update_colormode(target[target_idx], task_value)
 
 # Main Sequence
 load_conf()
+Log_Message(5, 'Initiating ' + SELF_NAME + ' v' + SELF_MAJOR + SELF_MINOR + SELF_PATCH )
 parameters(sys.argv[1:])
 auth()
 MyBridge = Bridge()
