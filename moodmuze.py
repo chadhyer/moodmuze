@@ -37,6 +37,7 @@ print_groups = False
 ## Strings
 task_lid = ''
 task_gid = ''
+task_dict = {}
 task_state = ''
 task_value = ''
 
@@ -89,17 +90,15 @@ def log_message(level, message):
 
 # Parameters used when executing script
 def parameters(argv):
-  global print_info
-  global print_lights
-  global print_groups
   global task_lid
   global task_gid
+  global task_dict
   global task_state
   global task_value
   try:
-    opts, args = getopt.getopt(argv,"hdBLl:Gg:s:v:",
-                               ["help","debug","bridge","lid-info","lid=",
-                                "gid-info","git=","state=","value="])
+    opts, args = getopt.getopt(argv,"hdl:g:s:v:O:B:H:S:E:X:c:A:C:",
+      ["help","debug","lid","state","value","on","bri","hue","sat",
+      "effect","xy","ct","alert","colormode"])
   except getopt.GetoptError:
     help_()
     sys.exit('Invalid argument!')
@@ -110,20 +109,38 @@ def parameters(argv):
     elif opt in ('-d', '--debug'): # Enter debug mode
       LOG_LEVEL = 1
       log_message (1, "Debug logging enabled via parameter")
-    elif opt in ('-B', '--bridge'): # Return bridge information
-      print_info = True
-    elif opt in ('-L', '--lid-info'): # Return Light(s) information
-      print_lights = True
     elif opt in ('-l', '--lid'): # Light(s) to modify
       task_lid = arg
-    elif opt in ('-G', '--gid-info'): # Return Group(s) information
-      print_groups = True
     elif opt in ('-g', '--gid'): # Group(s) to modify
       task_gid = arg
     elif opt in ('-s', '--state'): # Change state of Light/Group
       task_state = str(arg)
     elif opt in ('-v', '--value'): # Value applied to state change
       task_value = arg
+    elif opt in ('-O', '--on'):
+      if arg == 'true' or arg == 'True':
+        task_dict["on"] = True
+      elif arg == 'false' or arg == 'False':
+        task_dict["on"] = False
+    elif opt in ('-B', '--bri'):
+      task_dict["bri"] = int(arg)
+    elif opt in ('-H', '--hue'):
+      task_dict["hue"] = int(arg)
+    elif opt in ('-S', '--sat'):
+      task_dict["sat"] = int(arg)
+    elif opt in ('-E', '--effect'):
+      if arg != "none" and arg != "colorloop":
+        sys.exit('Invalid option for -E --effect')
+      task_dict["effect"] = str(arg)
+    elif opt in ('-X', '--xy'):
+      pass
+    elif opt in ('-c', '--ct'):
+      task_dict["ct"] = int(arg)
+    elif opt in ('-A', '--alert'):
+      task_dict["alert"] = str(arg)
+    elif opt in ('-C', '--colormode'):
+      task_dict["colormode"] = str(arg)
+  print(task_dict)
 
 # Create AUTH_TOKEN variable used to communicate with API
 def auth():
@@ -388,68 +405,12 @@ class Bridge:
       url = AUTH_TOKEN + '/lights/' + obj.id + '/state'
     else:
       url = AUTH_TOKEN + '/groups/' + obj.id + '/action'
+    print(url)
+    print(body)
     response = requests.put(url, body)
     data = str(response.content, ENCODING)
     check_response(data)
     self.update_info(obj)
-
-
-  ### STATE UPDATING FUNCTIONS
-  # Toggle Light/Group on/off then update class object's info
-  def toggle_on(self, obj):
-    if obj.on is True:
-      body = '{"on":false}'
-    elif obj.on is False:
-      body = '{"on":true}'
-    self.update_object(obj, body)
-
-  # Change Brightness (bri) for Light/Group
-  # 0 to 255
-  def update_bri(self, obj, value):
-    if value > 255:
-      value = 255
-    body = '{"bri":' + str(value) + '}'
-    self.update_object(obj, body)
-
-  # Change Hue for Light/Group
-  # 0 to 65535
-  def update_hue(self, obj, value):
-    if value > 65535:
-      value = 65535
-    body = '{"hue":' + str(value) + '}'
-    self.update_object(obj, body)
-
-  # Change Saturation (sat) for Light/Group
-  # 0 to 255
-  def update_sat(self, obj, value):
-    if value > 255:
-      value = 255
-    body = '{"sat":' + str(value) + '}'
-    self.update_object(obj, body)
-
-  # Change effect for Light/Group
-  def update_effect(self, obj, value):
-    body = '{"effect":"' + value + '"}'
-    self.update_object(obj, body)
-
-  # Change xy for Light/Group
-  def update_xy(self, obj, value):
-    x = value[0]
-    y = value[1]
-    body = '{"xy": [' + x + ', ' +  y + ']}'
-    self.update_object(obj, body)
-
-  # Change ct for Light/Group
-  def update_ct(self, obj, value):
-    body = '{"ct": ' + value + '}'
-    self.update_object(obj, body)
-
-  # Accepts 'none', 'select', 'lselect'
-  # Change alert for Light/Group
-  def update_alert(self, obj, value):
-    body = '{"alert": "' + value + '"}'
-    self.update_object(obj, body)
-  #  pass
 
   # Accepts 'none' or 'colorloop'
   # Change colormode for Light/Group
@@ -457,8 +418,10 @@ class Bridge:
     body = '{"colormode": "' + value + '"}'
     self.update_object(obj, body)
 
-  # task
-  def task(self):
+  # Task via pre-built dict
+  def build_task(self):
+    body = json.dumps(task_dict)
+    print(body)
     if task_lid != '':
       for idx, light in enumerate(self.lights):
         if task_lid == light.id:
@@ -466,6 +429,7 @@ class Bridge:
           target_idx = idx
           target_type = self.lights[target_idx].type
           target_name = self.lights[target_idx].name
+          self.update_object(target[target_idx], body)
     elif task_gid != '':
       for idx, group in enumerate(self.groups):
         if task_gid == group.id:
@@ -473,33 +437,7 @@ class Bridge:
           target_idx = idx
           target_type = self.groups[target_idx].type
           target_name = self.groups[target_idx].name
-    if task_state == 'on':
-      log_message(2, 'Toggling on state for ' + str(target_name))
-      self.toggle_on(target[target_idx])
-    elif task_state == 'bri':
-      log_message(2, 'Updating brightness for ' + str(target_name))
-      self.update_bri(target[target_idx], int(task_value))
-    elif task_state == 'hue':
-      log_message(2, 'Updating hue for ' + str(target_name))
-      self.update_hue(target[target_idx], int(task_value))
-    elif task_state == 'sat':
-      log_message(2, 'Updating saturation for ' + str(target_type))
-      self.update_sat(target[target_idx], int(task_value))
-    elif task_state == 'effect':
-      log_message(2, 'Updating effect for ' + str(target_name))
-      self.update_effect(target[target_idx], str(task_value))
-    elif task_state == 'xy':
-      log_message(2, 'Updating xy for ' + str(target_name))
-      self.update_xy(target[target_idx], task_value)
-    elif task_state == 'ct':
-      log_message(2, 'Updating ct for ' + str(target_name))
-      self.update_ct(target[target_idx], int(task_value))
-    elif task_state == 'alert':
-      log_message(2, 'Updating alert for ' + str(target_name))
-      self.update_alert(target[target_idx], task_value)
-    elif task_state == 'colormode':
-      log_message(2, 'Updating colormode for ' + str(target_name))
-      self.update_colormode(target[target_idx], str(task_value))
+          self.update_object(target[target_idx], body)
 
 # Main Sequence
 load_conf()
@@ -508,5 +446,5 @@ log_message(5, 'Initiating ' + SELF_NAME + ' v' + SELF_MAJOR + SELF_MINOR + \
 parameters(sys.argv[1:])
 auth()
 MyBridge = Bridge()
-if task_state != '':
-  MyBridge.task()
+if task_dict != {}:
+  MyBridge.build_task()
