@@ -444,10 +444,14 @@ class Bridge:
     body = '{"ct": ' + value + '}'
     self.update_object(obj, body)
 
+  # Accepts 'none', 'select', 'lselect'
   # Change alert for Light/Group
-  #def update_alert(self, obj, value):
+  def update_alert(self, obj, value):
+    body = '{"alert": "' + value + '"}'
+    self.update_object(obj, body)
   #  pass
 
+  # Accepts 'none' or 'colorloop'
   # Change colormode for Light/Group
   def update_colormode(self, obj, value):
     body = '{"colormode": "' + value + '"}'
@@ -474,28 +478,28 @@ class Bridge:
       self.toggle_on(target[target_idx])
     elif task_state == 'bri':
       log_message(2, 'Updating brightness for ' + str(target_name))
-      self.update_bri(target[target_idx], task_value)
+      self.update_bri(target[target_idx], int(task_value))
     elif task_state == 'hue':
       log_message(2, 'Updating hue for ' + str(target_name))
-      self.update_hue(target[target_idx], task_value)
+      self.update_hue(target[target_idx], int(task_value))
     elif task_state == 'sat':
       log_message(2, 'Updating saturation for ' + str(target_type))
-      self.update_sat(target[target_idx], task_value)
+      self.update_sat(target[target_idx], int(task_value))
     elif task_state == 'effect':
       log_message(2, 'Updating effect for ' + str(target_name))
-      self.update_effect(target[target_idx], task_value)
+      self.update_effect(target[target_idx], str(task_value))
     elif task_state == 'xy':
       log_message(2, 'Updating xy for ' + str(target_name))
       self.update_xy(target[target_idx], task_value)
     elif task_state == 'ct':
       log_message(2, 'Updating ct for ' + str(target_name))
-      self.update_ct(target[target_idx], task_value)
-    #elif task_state == 'alert':
-    #  log_message(2, 'Updating alert for ' + str(target_name))
-    #  self.update_alert(target[target_idx], task_value)
+      self.update_ct(target[target_idx], int(task_value))
+    elif task_state == 'alert':
+      log_message(2, 'Updating alert for ' + str(target_name))
+      self.update_alert(target[target_idx], task_value)
     elif task_state == 'colormode':
       log_message(2, 'Updating colormode for ' + str(target_name))
-      self.update_colormode(target[target_idx], task_value)
+      self.update_colormode(target[target_idx], str(task_value))
 
 # Main Sequence
 load_conf()
