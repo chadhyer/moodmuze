@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 #### Imported Packages
-from os.path import exists #check if file exists
 import os #run os commands
 import configparser #config file
 import datetime #for datetime in log entries
@@ -10,7 +9,6 @@ import getopt #parameters
 import json #handle json data
 import re #regular expression
 import requests #api interactions
-from pprint import pprint #allows printing object variables
 
 #### Global Variables
 ## Constants
@@ -38,8 +36,6 @@ print_groups = False
 task_lid = ''
 task_gid = ''
 task_dict = {}
-task_state = ''
-task_value = ''
 
 def help_():
   print( SELF_NAME + ' V' + SELF_MAJOR + '.' + SELF_MINOR)
@@ -51,7 +47,7 @@ def load_conf():
   global LOG_LEVEL
   global BRIDGE_IP
   global AUTH_FILE
-  conf_exists = exists(SELF_CONF)
+  conf_exists = os.path.exists(SELF_CONF)
   if conf_exists != True:
     dt = datetime.datetime.now()
     sys.exit(dt.strftime("%Y-%m-%d %H:%M:%S") + '    [ERROR]    Unable to \
@@ -93,12 +89,10 @@ def parameters(argv):
   global task_lid
   global task_gid
   global task_dict
-  global task_state
-  global task_value
   try:
-    opts, args = getopt.getopt(argv,"hdl:g:s:v:O:B:H:S:E:X:c:A:C:",
+    opts, args = getopt.getopt(argv,"hdl:g:s:v:O:B:H:S:E:X:c:A:C:b:",
       ["help","debug","lid","state","value","on","bri","hue","sat",
-      "effect","xy","ct","alert","colormode"])
+      "effect","xy","ct","alert","colormode","body"])
   except getopt.GetoptError:
     help_()
     sys.exit('Invalid argument!')
@@ -113,10 +107,6 @@ def parameters(argv):
       task_lid = arg
     elif opt in ('-g', '--gid'): # Group(s) to modify
       task_gid = arg
-    elif opt in ('-s', '--state'): # Change state of Light/Group
-      task_state = str(arg)
-    elif opt in ('-v', '--value'): # Value applied to state change
-      task_value = arg
     elif opt in ('-O', '--on'):
       if arg == 'true' or arg == 'True':
         task_dict["on"] = True
@@ -140,7 +130,6 @@ def parameters(argv):
       task_dict["alert"] = str(arg)
     elif opt in ('-C', '--colormode'):
       task_dict["colormode"] = str(arg)
-  print(task_dict)
 
 # Create AUTH_TOKEN variable used to communicate with API
 def auth():
@@ -305,123 +294,84 @@ class Bridge:
   # into variables
   def __init__(self):
     # Pull bridge config
-    url = AUTH_TOKEN + '/config'
-    response = requests.get(url)
-    data = str(response.content, ENCODING)
-    check_response(data)
-    self.config = json.loads(data)
+    #url = AUTH_TOKEN + '/config'
+    #response = requests.get(url)
+    #data = str(response.content, ENCODING)
+    #check_response(data)
+    #self.config = json.loads(data)
     # Extract config to variables
-    self.name = self.config["name"]
-    self.zigbeechannel = self.config["zigbeechannel"]
-    self.bridgeid = self.config["bridgeid"]
-    self.mac = self.config["mac"]
-    self.dhcp = self.config["dhcp"]
-    self.ipaddress = self.config["ipaddress"]
-    self.netmask = self.config["netmask"]
-    self.gateway = self.config["gateway"]
-    self.proxyaddress = self.config["proxyaddress"]
-    self.proxyport = self.config["proxyport"]
-    self.UTC = self.config["UTC"]
-    self.localtime = self.config["localtime"]
-    self.timezone = self.config["timezone"]
-    self.modelid = self.config["modelid"]
-    self.datastoreversion = self.config["datastoreversion"]
-    self.swversion = self.config["swversion"]
-    self.apiversion = self.config["apiversion"]
-    self.swupdate = self.config["swupdate"] #dict
-    self.swupdate2 = self.config["swupdate2"]
-    self.linkbutton = self.config["linkbutton"]
-    self.portalservices = self.config["portalservices"]
-    self.portalconnection = self.config["portalconnection"]
-    self.portalstate = self.config["portalstate"] #dict
-    self.internetservices = self.config["internetservices"] #dict
-    self.factorynew = self.config["factorynew"]
-    self.replacesbridgeid = self.config["replacesbridgeid"]
-    self.backup = self.config["backup"] #dict
-    self.starterkitid = self.config["starterkitid"]
-    self.whitelist = self.config["whitelist"] #dict
-    self.lights = []
-    self.groups = []
-    self.pull_lights()
-    self.pull_groups()
+    #self.name = self.config["name"]
+    #self.zigbeechannel = self.config["zigbeechannel"]
+    #self.bridgeid = self.config["bridgeid"]
+    #self.mac = self.config["mac"]
+    #self.dhcp = self.config["dhcp"]
+    #self.ipaddress = self.config["ipaddress"]
+    #self.netmask = self.config["netmask"]
+    #self.gateway = self.config["gateway"]
+    #self.proxyaddress = self.config["proxyaddress"]
+    #self.proxyport = self.config["proxyport"]
+    #self.UTC = self.config["UTC"]
+    #self.localtime = self.config["localtime"]
+    #self.timezone = self.config["timezone"]
+    #self.modelid = self.config["modelid"]
+    #self.datastoreversion = self.config["datastoreversion"]
+    #self.swversion = self.config["swversion"]
+    #self.apiversion = self.config["apiversion"]
+    #self.swupdate = self.config["swupdate"] #dict
+    #self.swupdate2 = self.config["swupdate2"]
+    #self.linkbutton = self.config["linkbutton"]
+    #self.portalservices = self.config["portalservices"]
+    #self.portalconnection = self.config["portalconnection"]
+    #self.portalstate = self.config["portalstate"] #dict
+    #self.internetservices = self.config["internetservices"] #dict
+    #self.factorynew = self.config["factorynew"]
+    #self.replacesbridgeid = self.config["replacesbridgeid"]
+    #self.backup = self.config["backup"] #dict
+    #self.starterkitid = self.config["starterkitid"]
+    #self.whitelist = self.config["whitelist"] #dict
+    # Gather lights and groups info
+    if task_lid != '':
+      self.lights = []
+      self.pull_info('lights')
+    if task_gid != '':
+      self.groups = []
+      self.pull_info('groups')
 
-    # Print self if -B --bridge flag used
-    if print_info is True:
-      pprint(vars(self))
-
-    # Print Lights
-    if print_lights is True:
-      for light in self.lights:
-        pprint(vars(light))
-
-    # Print Groups
-    if print_groups is True:
-      for group in self.groups:
-        pprint(vars(group))
-
-  ### INFO PULLING FUNCTIONS
-  # Pull info for all lights, save to a list, and crate light class object 
-  # for each light
-  def pull_lights(self):
-    url = AUTH_TOKEN + '/lights'
+  # Pull info for type_ (lights|groups) and save to list
+  def pull_info(self, type_):
+    url = AUTH_TOKEN + '/' + type_
     response = requests.get(url)
     data = str(response.content, ENCODING)
     check_response(data)
-    lights = json.loads(data)
-    for light in lights:
-      self.lights.append( Light( light, lights[light]) )
-
-  # Pull info for all groups, save to a list, and create group class object 
-  # for each group
-  def pull_groups(self):
-    url = AUTH_TOKEN + '/groups'
-    response = requests.get(url)
-    data = str(response.content, ENCODING)
-    check_response(data)
-    groups = json.loads(data)
-    for group in groups:
-      self.groups.append( Group( group, groups[group]) )
+    data_dict = json.loads(data)
+    for obj in data_dict:
+      if type_ == 'lights':
+        self.lights.append( Light( obj, data_dict[obj]) )
+      elif type_ == 'groups':
+        self.groups.append( Group( obj, data_dict[obj]) )
 
   # Update Light/Group class object's info
-  def update_info(self, obj):
-    # Check if object is light or group
-    if re.search(".*light", obj.type):
-      type_ = '/lights/'
-    else:
-      type_ = '/groups/'
-    # Pull and update class state variables
-    url = AUTH_TOKEN + type_ + obj.id
+  def update_info(self, obj, type_):
+    url = AUTH_TOKEN + '/' + type_ + '/' + obj.id
     response = requests.get(url)
     data = str(response.content, ENCODING)
     check_response(data)
     info = json.loads(data)
     obj.load_state(info["state"])
-    if type_ == '/groups/':
+    if type_ == 'groups':
       obj.load_action(info["action"])
 
   # update_object's state/action
-  def update_object(self, obj, body):
-    if re.search(".*light", obj.type):
-      url = AUTH_TOKEN + '/lights/' + obj.id + '/state'
-    else:
-      url = AUTH_TOKEN + '/groups/' + obj.id + '/action'
-    print(url)
-    print(body)
+  def update_object(self, obj, body, type_, a_s):
+    url = AUTH_TOKEN + '/' + type_  + '/' + obj.id + a_s
     response = requests.put(url, body)
     data = str(response.content, ENCODING)
     check_response(data)
-    self.update_info(obj)
-
-  # Accepts 'none' or 'colorloop'
-  # Change colormode for Light/Group
-  def update_colormode(self, obj, value):
-    body = '{"colormode": "' + value + '"}'
-    self.update_object(obj, body)
+    self.update_info(obj, type_)
 
   # Task via pre-built dict
-  def build_task(self):
+  def exe_task(self):
     body = json.dumps(task_dict)
-    print(body)
     if task_lid != '':
       for idx, light in enumerate(self.lights):
         if task_lid == light.id:
@@ -429,7 +379,7 @@ class Bridge:
           target_idx = idx
           target_type = self.lights[target_idx].type
           target_name = self.lights[target_idx].name
-          self.update_object(target[target_idx], body)
+          self.update_object(target[target_idx], body, 'lights', '/state')
     elif task_gid != '':
       for idx, group in enumerate(self.groups):
         if task_gid == group.id:
@@ -437,14 +387,14 @@ class Bridge:
           target_idx = idx
           target_type = self.groups[target_idx].type
           target_name = self.groups[target_idx].name
-          self.update_object(target[target_idx], body)
+          self.update_object(target[target_idx], body, 'groups', '/action')
 
 # Main Sequence
 load_conf()
-log_message(5, 'Initiating ' + SELF_NAME + ' v' + SELF_MAJOR + SELF_MINOR + \
-            SELF_PATCH )
+log_message(5, 'Initiating ' + SELF_NAME + ' v' + SELF_MAJOR + '.'
+            + SELF_MINOR + '.' + SELF_PATCH )
 parameters(sys.argv[1:])
 auth()
 MyBridge = Bridge()
 if task_dict != {}:
-  MyBridge.build_task()
+  MyBridge.exe_task()
