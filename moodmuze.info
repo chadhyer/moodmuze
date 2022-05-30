@@ -1,7 +1,7 @@
 #### moodmuze Info File ####
-SELF_NAME=moodmuze
-SELF_MAJOR=1
-SELF_MINOR=1
-SELF_PATCH=0
-SELF_INFO=/etc/moodmuze/moodmuze.info
-SELF_CONF=/etc/moodmuze/moodmuze.conf
+NAME=moodmuze
+MAJOR=1
+MINOR=1
+PATCH=0
+INFO=moodmuze.info
+CONF=settings.py
