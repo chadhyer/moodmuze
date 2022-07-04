@@ -1,8 +1,2 @@
-auth*
-moodmuze.conf
-moodmuze.py.bak
-test-key
-Pipfile
-Pipfile.lock
-general.log
-__pycache__/
+old/
+env/
