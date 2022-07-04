@@ -3,3 +3,5 @@ env/
 db.sqlite3
 manage.py
 notes.txt
+general.log
+log/
