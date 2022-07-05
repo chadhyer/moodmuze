@@ -16,6 +16,8 @@ import os
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
+BRIDGE_KEY = os.environ.get('BRIDGE_KEY', 'test_key')
+BRIDGE_IP = os.environ.get('BRIDGE_IP', '10.0.0.10')
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
@@ -144,3 +146,4 @@ LOGGING = {
         }
     }
 }
+
