@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="X-UA-Compatible" content="ie=edge">
+        <title>Rooms</title>
+    </head>
+</html>
+<body>
+    <h1>Rooms</h1>
+
+    <h4>List of Rooms</h4>
+    <table style="width:100%">
+        <tr>
+            <td>ID</td>
+            <td>Name</td>
+            <td>Lights</td>
+            <td>Lights On</td>
+            <td>Group Light Info</td>
+        </tr>
+        {% for id, data in group.items %}
+        <tr>
+            <td>{{id}}</td>
+            <td>{{data.name}}</td>
+            <td>
+                {% for light in data.lights %}
+                    {{ light }} <br>
+                {% endfor %}
+            </td>
+            <td>All: {{data.state.all_on}} <br> Any: {{data.state.any_on}}</td>
+            <td>
+                {% for key, value in data.action.items %}
+                    {{ key }} = {{ value }} <br>
+                {% endfor %}
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
