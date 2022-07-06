@@ -6,5 +6,5 @@ notes.txt
 general.log
 log/
 auth
-moodmuze/__pycache__/
-bridge_con/__pycache__/
+**/__pycache__/
+**/**/__pycache__/
