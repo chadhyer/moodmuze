@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="X-UA-Compatible" content="ie=edge">
+        <title>Lights</title>
+    </head>
+</html>
+<body>
+    <h1>Lights</h1>
+
+    <h4>List of Rooms</h4>
+    <table style="width:100%">
+        <tr>
+            <td>ID</td>
+            <td>Name</td>
+            <td>On</td>
+            <td>Color Mode</td>
+            <td>Brightness</td>
+            <td>HUE</td>
+            <td>Saturation</td>
+            <td>Color Temp</td>
+            <td>Effect</td>
+            <td>XY</td>
+            <td>available</td>
+        </tr>
+        {% for id, data in light.items %}
+        <tr>
+            <td>{{id}}</td>
+            <td>{{data.name}}</td>
+            <td>{{data.state.on}}</td>
+            <td>{{data.state.colormode}}</td>
+            <td>{{data.state.bri}}</td>
+            <td>{{data.state.hue}}</td>
+            <td>{{data.state.sat}}</td>
+            <td>{{data.state.ct}}</td>
+            <td>{{data.state.effect}}</td>
+            <td>{{data.state.xy}}</td>
+            <td>{{data.state.reachable}}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>

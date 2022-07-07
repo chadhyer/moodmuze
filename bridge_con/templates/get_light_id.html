@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="X-UA-Compatible" content="ie=edge">
+        <title>Light {{light.id}}</title>
+    </head>
+</html>
+<body>
+    <h1>Light</h1>
+
+    <h4>Light {{light.id}}</h4>
+    <table style="width:100%">
+        <tr>
+            <td>ID</td>
+            <td>Name</td>
+            <td>On</td>
+            <td>Color Mode</td>
+            <td>Brightness</td>
+            <td>HUE</td>
+            <td>Saturation</td>
+            <td>Color Temp</td>
+            <td>Effect</td>
+            <td>XY</td>
+            <td>available</td>
+        </tr>
+        <tr>
+            <td>{{light.id}}</td>
+            <td>{{light.name}}</td>
+            <td>{{light.state.on}}</td>
+            <td>{{light.state.colormode}}</td>
+            <td>{{light.state.bri}}</td>
+            <td>{{light.state.hue}}</td>
+            <td>{{light.state.sat}}</td>
+            <td>{{light.state.ct}}</td>
+            <td>{{light.state.effect}}</td>
+            <td>{{light.state.xy}}</td>
+            <td>{{light.state.reachable}}</td>
+        </tr>
+    </table>
+</body>
