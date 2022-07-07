@@ -18,6 +18,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 BRIDGE_KEY = os.environ.get('BRIDGE_KEY', 'test_key')
 BRIDGE_IP = os.environ.get('BRIDGE_IP', 'test_ip')
+BRIDGE_API = f'http://{BRIDGE_IP}/api/{BRIDGE_KEY}'
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
